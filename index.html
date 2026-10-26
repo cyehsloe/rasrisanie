@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#eef2fb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Дневник</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js"></script>
+<style>
+:root{--bg:#eef2fb;--card:#fff;--ink:#1d2433;--mut:#667085;--ac:#5b7cf0;--acs:#e3eaff;--line:#e1e6f2;--ex:#fdebc8;--exi:#8a5800;--ok:#3f9d73;--bad:#d1495b;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171d;--card:#1e222b;--ink:#eceef3;--mut:#9aa1ae;--ac:#8fa8ff;--acs:#29324f;--line:#2c313c;--ex:#4a3a18;--exi:#f3c877;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14171d;--card:#1e222b;--ink:#eceef3;--mut:#9aa1ae;--ac:#8fa8ff;--acs:#29324f;--line:#2c313c;--ex:#4a3a18;--exi:#f3c877;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body,#root{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Nunito","Segoe UI",system-ui,-apple-system,sans-serif;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px}
+.inp{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;font-size:16px;outline:none}
+.inp:focus{border-color:var(--ac)}
+.btn{background:var(--ac);color:#fff;border-radius:12px;padding:10px 16px;font-weight:700;border:0}
+:root[data-theme="dark"] .btn{color:#10142a}
+.ghost{background:var(--acs);color:var(--ac);border-radius:12px;padding:8px 12px;font-weight:700;border:0}
+.chip{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-weight:700;color:var(--mut);background:var(--card)}
+.chip.on{background:var(--ac);border-color:var(--ac);color:#fff}
+:root[data-theme="dark"] .chip.on{color:#10142a}
+.tag{background:var(--ex);color:var(--exi);border-radius:8px;padding:1px 7px;font-size:12px;font-weight:800}
+.mut{color:var(--mut)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useMemo,useRef}=React;
+const P={
+cal:'<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+task:'<path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+users:'<circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.1a4 4 0 0 1 0 7.8M21 21v-2a4 4 0 0 0-3-3.9"/>',
+trophy:'<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.7V17c0 .6-.5 1-1 1.2-1.2.6-2 2-2 3.800M14 14.700V17c0 .6.5 1 1 1.200 1.200.6 2 2 2 3.800M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+cog:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.200 4.200l2.100 2.100M17.700 17.700l2.100 2.100M2 12h3M19 12h3M4.200 19.800l2.100-2.100M17.700 6.300l2.100-2.100"/>',
+plus:'<path d="M5 12h14M12 5v14"/>',
+x:'<path d="M18 6 6 18M6 6l12 12"/>',
+trash:'<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
+l:'<path d="m15 18-6-6 6-6"/>',
+r:'<path d="m9 18 6-6-6-6"/>',
+clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+link:'<path d="M10 13a5 5 0 0 0 7.500.500l3-3a5 5 0 0 0-7.100-7.100l-1.700 1.700M14 11a5 5 0 0 0-7.500-.500l-3 3a5 5 0 0 0 7.100 7.100l1.700-1.700"/>',
+check:'<path d="M20 6 9 17l-5-5"/>',
+pin:'<path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>'};
+const I=({n,s=22,c=''})=><svg className={c} width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{__html:P[n]}}/>;
+
+const useLS=(k,d)=>{const[v,setV]=useState(()=>{try{const r=localStorage.getItem(k);return r?JSON.parse(r):d}catch(e){return d}});
+useEffect(()=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},[v]);return[v,setV]};
+const uid=()=>Math.random().toString(36).slice(2,9);
+const DAYS=['Пн','Вт','Ср','Чт','Пт','Сб'];
+const DAYF=['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+const m=t=>{const[a,b]=(t||'0:0').split(':').map(Number);return a*60+b};
+const DEF={bells:[['08:30','09:10'],['09:20','10:00'],['10:15','10:55'],['11:05','11:45'],['12:10','12:50'],['13:15','13:55'],['14:05','14:40']],
+bellsMon:[['08:20','08:50'],['09:00','09:40'],['09:50','10:30'],['10:45','11:25'],['11:35','12:15'],['12:40','13:20'],['13:45','14:25']],
+subjects:['Разговоры о важном','Алгебра','Геометрия','Вероятность и статистика','Русский язык','Литература','Английский язык','История','Обществознание','Биология','Химия','Физика','Физический практикум','Информатика','Основы программирования','Индивидуальный проект','ОБЗР','Физкультура','Россия — мои горизонты','Моя семья']};
+const TE={ш:'Шишкарева К.В.',б:'Бондарчук Т.П.',в:'Смирнова В.А.',е:'Смирнова Е.В.',к:'Круль С.А.',с:'Соколова У.В.',м:'Мясникова А.Р.',я:'Семянников А.А.',т:'Степаненко Е.А.',н:'Коваль Н.И.'};
+const R=[[0,1,'Разговоры о важном','4','ш'],[0,2,'Биология','33','б'],[0,3,'Химия','33','б'],[0,4,'Информатика','инф 2','в'],[0,5,'Информатика','инф 2','в'],[0,6,'Физкультура','спортзал','м'],[0,7,'Физкультура','спортзал','м'],
+[1,1,'Литература','4','ш'],[1,2,'Русский язык','4','ш'],[1,3,'Русский язык','4','ш'],[1,4,'Английский язык','18','н'],[1,5,'Алгебра','26','к'],[1,6,'Алгебра','26','к'],
+[2,1,'Алгебра','26','к'],[2,2,'Алгебра','26','к'],[2,3,'Физика','31','е'],[2,4,'Физика','31','е'],[2,5,'Литература','4','ш'],[2,6,'Литература','4','ш'],
+[3,1,'Вероятность и статистика','26','к'],[3,2,'Обществознание','20','с'],[3,3,'Обществознание','20','с'],[3,4,'ОБЗР','14','я'],[3,5,'Геометрия','26','к'],[3,6,'Геометрия','26','к'],[3,7,'Россия — мои горизонты','4','ш'],
+[4,1,'История','20','т'],[4,2,'История','20','т'],[4,3,'Физика','31','е'],[4,4,'Физика','31','е'],[4,5,'Физический практикум','31','е'],[4,6,'Геометрия','26','к'],[4,7,'Моя семья','','ш'],
+[5,1,'Основы программирования','инф 2','в'],[5,2,'Основы программирования','инф 2','в'],[5,3,'Английский язык','18','н'],[5,4,'Английский язык','18','н'],[5,5,'Физика','31','е'],[5,6,'Индивидуальный проект','инф 2','в'],[5,6,'Индивидуальный проект','31','е']];
+const DL=R.map(([day,n,subject,room,t],i)=>({id:'d'+i,day,n,subject,room,teacher:TE[t]}));
+const rm=r=>/^\d+$/.test(r)?'каб. '+r:r;
+const STAGES=['Школьный','Муниципальный','Региональный','Заключительный'];
+const STATUS=['Готовлюсь','Написал, жду результатов','Прошёл','Не прошёл'];
+
+function Sheet({title,onClose,children}){
+return <div className="fixed inset-0 z-50 flex items-end" style={{background:'rgba(10,14,25,.45)'}} onClick={onClose}>
+<div className="w-full card max-h-[88%] overflow-y-auto p-4" style={{borderRadius:'22px 22px 0 0',paddingBottom:'calc(1rem + env(safe-area-inset-bottom,0px))'}} onClick={e=>e.stopPropagation()}>
+<div className="flex items-center justify-between mb-3"><div className="text-lg font-extrabold">{title}</div>
+<button aria-label="Закрыть" className="ghost" onClick={onClose}><I n="x" s={18}/></button></div>{children}</div></div>}
+const Lbl=({t,children})=><label className="block mb-3"><div className="text-sm font-bold mut mb-1">{t}</div>{children}</label>;
+const Empty=({t})=><div className="text-center mut py-10 px-6">{t}</div>;
+
+function Schedule({D,go}){
+const{lessons,setLessons,extras,settings,notes}=D;
+const now=new Date();const todayIdx=(now.getDay()+6)%7;
+const[day,setDay]=useState(todayIdx>5?0:todayIdx);
+const[tick,setTick]=useState(0);const[add,setAdd]=useState(false);const[note,setNote]=useState(null);
+useEffect(()=>{const i=setInterval(()=>setTick(t=>t+1),20000);return()=>clearInterval(i)},[]);
+const build=d=>{
+const a=lessons.filter(l=>l.day===d).map(l=>{const b=(l.day===0?settings.bellsMon:settings.bells)[l.n-1]||['',''];return{...l,s:b[0],e:b[1],extra:false}});
+const b=extras.filter(x=>x.days.includes(d)).map(x=>({id:x.id,n:'',subject:x.title,room:x.place,s:x.s,e:x.e,extra:true}));
+return[...a,...b].sort((p,q)=>m(p.s)-m(q.s))};
+const items=useMemo(()=>build(day),[day,lessons,extras,settings]);
+const n=new Date();const cur=n.getHours()*60+n.getMinutes();
+let status=null;
+if(todayIdx<=5){const t=build(todayIdx);
+const c=t.find(i=>m(i.s)<=cur&&cur<m(i.e));
+if(c)status={now:true,i:c,min:m(c.e)-cur};
+else{const nx=t.find(i=>m(i.s)>cur);status=nx?{now:false,i:nx,min:m(nx.s)-cur}:{done:true}}}
+const sx=useRef(null);
+const swipe=e=>{if(sx.current==null)return;const dx=e.changedTouches[0].clientX-sx.current;sx.current=null;
+if(Math.abs(dx)>60)setDay(d=>Math.max(0,Math.min(5,d+(dx<0?1:-1))))};
+return <div onTouchStart={e=>sx.current=e.touches[0].clientX} onTouchEnd={swipe} className="min-h-full">
+<div className="px-4 pt-1">
+<div className="card p-3 mb-3" style={{background:'var(--acs)',borderColor:'transparent'}}>
+{status&&status.i?<div className="flex items-center gap-3"><I n="clock" c="shrink-0" s={26}/>
+<div className="min-w-0"><div className="text-sm mut font-bold">{status.now?'Сейчас идёт':'Дальше'}</div>
+<div className="font-extrabold truncate">{status.i.subject}{status.i.room?' · '+rm(status.i.room):''}</div>
+<div className="text-sm">{status.now?`Осталось ${status.min} мин`:`Начнётся через ${status.min>=60?Math.floor(status.min/60)+' ч '+status.min%60+' мин':status.min+' мин'}`}</div></div></div>
+:<div className="flex items-center gap-3"><I n="check" s={24}/><div className="font-bold">{todayIdx>5?'Сегодня воскресенье — отдыхай':'На сегодня занятия закончились'}</div></div>}
+</div>
+<Soon D={D}/><Pack D={D} todayIdx={todayIdx}/><div className="flex gap-1.5 mb-3">{DAYS.map((d,i)=><button key={d} onClick={()=>setDay(i)} className={'chip flex-1 !px-0 '+(i===day?'on':'')} style={i===todayIdx&&i!==day?{borderColor:'var(--ac)'}:{}}>{d}</button>)}</div>
+<div className="flex items-center justify-between mb-2">
+<button aria-label="Предыдущий день" className="ghost" disabled={day===0} onClick={()=>setDay(day-1)} style={{opacity:day===0?.4:1}}><I n="l" s={18}/></button>
+<div className="font-extrabold text-lg">{DAYF[day]}</div>
+<button aria-label="Следующий день" className="ghost" disabled={day===5} onClick={()=>setDay(day+1)} style={{opacity:day===5?.4:1}}><I n="r" s={18}/></button></div>
+</div>
+<div className="px-4 space-y-2 pb-3">
+{items.length===0&&<Empty t="В этот день уроков нет. Добавь первый урок кнопкой ниже."/>}
+{items.map(i=>{const act=day===todayIdx&&m(i.s)<=cur&&cur<m(i.e);
+return <div key={(i.extra?'e':'l')+i.id} onClick={()=>setNote(i)} className="card p-3 flex items-center gap-3" style={{cursor:'pointer',borderLeft:'6px solid '+(i.extra?'#e0a030':col(i.subject,settings.colors)),boxShadow:act?'0 0 0 2px var(--ac)':'none'}}>
+<div className="w-14 shrink-0 text-center"><div className="font-extrabold">{i.s}</div><div className="text-xs mut">{i.e}</div></div>
+<div className="w-px self-stretch" style={{background:'var(--line)'}}/>
+<div className="flex-1 min-w-0"><div className="font-bold truncate">{i.subject} {i.extra&&<span className="tag ml-1">Доп.</span>}</div>
+<div className="text-sm mut">{i.extra?'':i.n+' урок'}{!i.extra&&i.room?' · ':''}{i.room?rm(i.room):''}</div>{i.teacher&&<div className="text-sm mut">{i.teacher}</div>}{notes[i.id]&&<div className="text-sm truncate" style={{color:'var(--ac)'}}>✎ {notes[i.id]}</div>}</div>
+{!i.extra&&<button aria-label="Удалить урок" className="mut p-2" onClick={e=>{e.stopPropagation();setLessons(lessons.filter(l=>l.id!==i.id))}}><I n="trash" s={18}/></button>}
+</div>})}
+<button className="btn w-full flex items-center justify-center gap-2" onClick={()=>setAdd(true)}><I n="plus" s={18}/>Добавить урок</button>
+</div>
+{add&&<LessonForm D={D} day={day} onClose={()=>setAdd(false)}/>}
+{note&&<NoteSheet D={D} item={note} onClose={()=>setNote(null)}/>}
+</div>}
+
+function Pack({D,todayIdx}){
+const{lessons,hw,exams,pack,setPack}=D;const[open,setOpen]=useState(true);
+const nd=todayIdx>=5?0:todayIdx+1;
+const dt=new Date();dt.setDate(dt.getDate()+(todayIdx===5?2:1));
+const key=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+const subs=[...new Set(lessons.filter(l=>l.day===nd).sort((a,b)=>a.n-b.n).map(l=>l.subject))];
+const done=pack[key]||[];
+const tog=s=>setPack({[key]:done.includes(s)?done.filter(x=>x!==s):[...done,s]});
+const ex=exams.filter(e=>e.date===key);
+if(!subs.length)return null;
+return <div className="card mb-3">
+<button className="w-full flex items-center justify-between p-3 font-extrabold" onClick={()=>setOpen(!open)}><span>Что взять {todayIdx>=5?'в понедельник':'завтра'}</span><span className="mut text-sm font-bold">{done.length}/{subs.length}</span></button>
+{open&&<div className="px-3 pb-3 space-y-1.5">
+{ex.map(e=><div key={e.id} className="text-sm font-bold" style={{color:'var(--bad)'}}>{e.type}: {e.subject}{e.topic?' — '+e.topic:''}</div>)}
+{subs.map(s=>{const on=done.includes(s);const n=hw.filter(h=>!h.done&&h.subject===s).length;
+return <button key={s} onClick={()=>tog(s)} className="w-full flex items-center gap-3 text-left py-1">
+<span className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{border:'2px solid '+(on?'var(--ok)':'var(--line)'),background:on?'var(--ok)':'transparent',color:'#fff'}}>{on&&<I n="check" s={14}/>}</span>
+<span className="flex-1" style={{textDecoration:on?'line-through':'none',opacity:on?.55:1}}>{s}{/Физкульт/.test(s)&&' + форма'}</span>{n>0&&<span className="tag">ДЗ: {n}</span>}</button>})}
+</div>}</div>}
+
+function Exams({D}){
+const{exams,setExams,settings}=D;
+const[f,setF]=useState({subject:settings.subjects[0]||'',type:'Контрольная',date:'',topic:''});
+const t0=new Date();t0.setHours(0,0,0,0);
+const left=d=>Math.round((new Date(d+'T00:00:00')-t0)/864e5);
+const lab=n=>n<0?'прошла':n===0?'сегодня':n===1?'завтра':'через '+n+' дн.';
+const add=()=>{if(!f.date)return;setExams([...exams,{...f,id:uid()}]);setF({...f,topic:'',date:''})};
+const sorted=[...exams].sort((a,b)=>((left(a.date)<0)-(left(b.date)<0))||(a.date>b.date?1:-1));
+return <>
+<div className="card p-3 mb-3 space-y-2">
+<div className="flex gap-2"><select className="inp" value={f.subject} onChange={e=>setF({...f,subject:e.target.value})}>{settings.subjects.map(s=><option key={s}>{s}</option>)}</select>
+<select className="inp" value={f.type} onChange={e=>setF({...f,type:e.target.value})}>{['Контрольная','Экзамен','Зачёт','Самостоятельная'].map(s=><option key={s}>{s}</option>)}</select></div>
+<div className="flex gap-2"><input type="date" className="inp" value={f.date} onChange={e=>setF({...f,date:e.target.value})} aria-label="Дата"/>
+<input className="inp" value={f.topic} onChange={e=>setF({...f,topic:e.target.value})} onKeyDown={e=>e.key==='Enter'&&add()} placeholder="Тема (необязательно)"/>
+<button className="btn" aria-label="Добавить" onClick={add}><I n="plus" s={20}/></button></div></div>
+<div className="space-y-2">{sorted.length===0&&<Empty t="Контрольных пока нет. Выбери предмет и дату выше."/>}
+{sorted.map(e=>{const n=left(e.date);return <div key={e.id} className="card p-3 flex items-center gap-3" style={{opacity:n<0?.55:1}}>
+<div className="w-20 shrink-0 text-center font-extrabold" style={{color:n>=0&&n<=2?'var(--bad)':'var(--ac)'}}>{lab(n)}</div>
+<div className="flex-1 min-w-0"><div className="font-bold">{e.type}: {e.subject}</div><div className="text-sm mut">{e.date.split('-').reverse().slice(0,2).join('.')}{e.topic?' · '+e.topic:''}</div></div>
+<button aria-label="Удалить" className="mut p-2" onClick={()=>setExams(exams.filter(x=>x.id!==e.id))}><I n="trash" s={18}/></button></div>})}</div>
+</>}
+
+const PAL=['#5b7cf0','#e0698a','#3f9d73','#e0a030','#8a63d2','#2fa8c4','#d9714a','#7a8a99'];
+const col=(s,c)=>(c&&c[s])||PAL[[...(s||'')].reduce((a,ch)=>a+ch.charCodeAt(0),0)%PAL.length];
+const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+const dk=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const beep=()=>{try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(e){}try{const c=new (window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();o.connect(c.destination);o.frequency.value=880;o.start();setTimeout(()=>{o.stop();c.close()},450)}catch(e){}};
+
+function Pomo({pm,setPm,subjects}){
+const total=(pm.mode==='work'?pm.w:pm.b)*60;
+const left=pm.run?Math.max(0,Math.ceil((pm.end-Date.now())/1000)):pm.rem;
+const frac=total?1-left/total:0;const R=100,C=2*Math.PI*R;
+const set=patch=>setPm(p=>({...p,run:false,...patch}));
+const mode=md=>set({mode:md,rem:(md==='work'?pm.w:pm.b)*60});
+const cfg=(k,d)=>{const v=Math.max(1,Math.min(90,pm[k]+d));set({[k]:v,...(pm.mode===(k==='w'?'work':'break')?{rem:v*60}:{})})};
+const toggle=()=>pm.run?setPm(p=>({...p,run:false,rem:Math.max(1,Math.ceil((p.end-Date.now())/1000))})):setPm(p=>({...p,run:true,end:Date.now()+p.rem*1000}));
+const cnt=pm.done[dk()]||0;
+return <div className="px-4 pt-1 pb-3 flex flex-col items-center">
+<div className="flex gap-2 mb-4 w-full"><button className={'chip flex-1 '+(pm.mode==='work'?'on':'')} onClick={()=>mode('work')}>Работа</button><button className={'chip flex-1 '+(pm.mode==='break'?'on':'')} onClick={()=>mode('break')}>Перерыв</button></div>
+<div className="relative mb-4" style={{width:240,height:240}}>
+<svg width="240" height="240" viewBox="0 0 240 240" style={{transform:'rotate(-90deg)'}}><circle cx="120" cy="120" r={R} fill="none" stroke="var(--line)" strokeWidth="12"/><circle cx="120" cy="120" r={R} fill="none" stroke={pm.mode==='work'?'var(--ac)':'var(--ok)'} strokeWidth="12" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C*(1-frac)}/></svg>
+<div className="absolute inset-0 flex flex-col items-center justify-center"><div className="font-extrabold" style={{fontSize:52,fontVariantNumeric:'tabular-nums'}}>{fmt(left)}</div><div className="mut font-bold">{pm.mode==='work'?(pm.subject||'Фокус'):'Отдых'}</div></div></div>
+<div className="flex gap-2 w-full mb-4"><button className="btn flex-1" onClick={toggle}>{pm.run?'Пауза':left<total?'Продолжить':'Старт'}</button><button className="ghost" onClick={()=>set({rem:total})}>Сброс</button></div>
+<select className="inp mb-3" value={pm.subject} onChange={e=>setPm(p=>({...p,subject:e.target.value}))}><option value="">Без предмета</option>{subjects.map(s=><option key={s}>{s}</option>)}</select>
+<div className="flex gap-3 w-full mb-3">{[['w','Работа'],['b','Перерыв']].map(([k,t])=><div key={k} className="card flex-1 p-2 flex items-center justify-between"><button className="ghost" disabled={pm.run} style={{opacity:pm.run?.4:1}} onClick={()=>cfg(k,-1)} aria-label="Меньше">−</button><div className="text-center"><div className="font-extrabold">{pm[k]} мин</div><div className="text-xs mut">{t}</div></div><button className="ghost" disabled={pm.run} style={{opacity:pm.run?.4:1}} onClick={()=>cfg(k,1)} aria-label="Больше">+</button></div>)}</div>
+<div className="mut text-sm">Сегодня завершено циклов: <b style={{color:'var(--ink)'}}>{cnt}</b>{cnt>0&&' · '+cnt*pm.w+' мин'}</div>
+</div>}
+
+function Soon({D}){
+const{events,setEvents,olymp}=D;const[open,setOpen]=useState(false);const[t,setT]=useState('');const[d,setD]=useState('');
+const t0=new Date();t0.setHours(0,0,0,0);
+const left=x=>Math.round((new Date(x+'T00:00:00')-t0)/864e5);
+const word=n=>n===0?'сегодня':n===1?'завтра':n+' '+(n%10===1&&n%100!==11?'день':n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?'дня':'дней');
+const all=[...events.map(e=>({...e})),...olymp.filter(o=>o.date&&o.status!=='Прошёл'&&o.status!=='Не прошёл').map(o=>({id:o.id,title:o.title,date:o.date,ol:1}))].filter(x=>left(x.date)>=0).sort((a,b)=>a.date>b.date?1:-1);
+const add=()=>{if(!t.trim()||!d)return;setEvents([...events,{id:uid(),title:t.trim(),date:d}]);setT('');setD('')};
+return <div className="card p-3 mb-3">
+<div className="flex items-center justify-between"><div className="font-extrabold">Скоро</div><button className="ghost" style={{padding:'4px 10px'}} aria-label="Добавить событие" onClick={()=>setOpen(true)}><I n="plus" s={16}/></button></div>
+{all.length===0&&<div className="text-sm mut mt-1">Добавь каникулы, поездку или другое событие, и я покажу, сколько дней осталось.</div>}
+{all.slice(0,3).map(x=><div key={x.id} className="flex justify-between gap-3 mt-1.5"><span className="truncate">{x.ol&&<span className="tag mr-1">Олимп.</span>}{x.title}</span><b className="shrink-0" style={{color:left(x.date)<=2?'var(--bad)':'var(--ac)'}}>{word(left(x.date))}</b></div>)}
+{open&&<Sheet title="События и отсчёт" onClose={()=>setOpen(false)}>
+<Lbl t="Название"><input className="inp" value={t} onChange={e=>setT(e.target.value)} placeholder="Каникулы, поездка, экскурсия…"/></Lbl>
+<div className="flex gap-2 mb-4"><input type="date" className="inp" value={d} onChange={e=>setD(e.target.value)} aria-label="Дата"/><button className="btn" onClick={add} aria-label="Добавить"><I n="plus" s={20}/></button></div>
+<div className="space-y-2">{[...events].sort((a,b)=>a.date>b.date?1:-1).map(e=><div key={e.id} className="flex items-center gap-2"><div className="flex-1 min-w-0"><div className="font-bold truncate">{e.title}</div><div className="text-sm mut">{e.date.split('-').reverse().join('.')}{left(e.date)<0?' · прошло':''}</div></div><button aria-label="Удалить" className="mut p-2" onClick={()=>setEvents(events.filter(x=>x.id!==e.id))}><I n="trash" s={18}/></button></div>)}</div>
+</Sheet>}</div>}
+
+function NoteSheet({D,item,onClose}){
+const{notes,setNotes}=D;const[v,setV]=useState(notes[item.id]||'');
+const save=()=>{const n={...notes};if(v.trim())n[item.id]=v.trim();else delete n[item.id];setNotes(n);onClose()};
+return <Sheet title={item.subject} onClose={onClose}><div className="text-sm mut mb-2">{item.s}–{item.e}{item.room?' · '+rm(item.room):''}</div>
+<textarea className="inp mb-3" rows="5" value={v} onChange={e=>setV(e.target.value)} placeholder="Что взять, что спросят, что объяснили…"/>
+<button className="btn w-full" onClick={save}>Сохранить заметку</button></Sheet>}
+
+function LessonForm({D,day,onClose}){
+const{settings,lessons,setLessons}=D;
+const[n,setN]=useState(1);const[sub,setSub]=useState(settings.subjects[0]||'');const[room,setRoom]=useState('');const[tch,setTch]=useState('');
+const save=()=>{if(!sub.trim())return;setLessons([...lessons,{id:uid(),day,n:+n,subject:sub.trim(),room:room.trim(),teacher:tch.trim()}]);onClose()};
+return <Sheet title={'Новый урок · '+DAYF[day]} onClose={onClose}>
+<Lbl t="Номер урока"><select className="inp" value={n} onChange={e=>setN(e.target.value)}>{(day===0?settings.bellsMon:settings.bells).map((b,i)=><option key={i} value={i+1}>{i+1} урок ({b[0]}–{b[1]})</option>)}</select></Lbl>
+<Lbl t="Предмет">{settings.subjects.length?<select className="inp" value={sub} onChange={e=>setSub(e.target.value)}>{settings.subjects.map(s=><option key={s}>{s}</option>)}</select>:<input className="inp" value={sub} onChange={e=>setSub(e.target.value)} placeholder="Название предмета"/>}</Lbl>
+<Lbl t="Кабинет"><input className="inp" value={room} onChange={e=>setRoom(e.target.value)} placeholder="Например, 214"/></Lbl>
+<Lbl t="Учитель"><input className="inp" value={tch} onChange={e=>setTch(e.target.value)} placeholder="Фамилия И.О."/></Lbl>
+<button className="btn w-full" onClick={save}>Сохранить урок</button></Sheet>}
+
+function Planner({D}){
+const{hw,setHw,shop,setShop,settings}=D;
+const[seg,setSeg]=useState('hw');
+const[sub,setSub]=useState(settings.subjects[0]||'');const[txt,setTxt]=useState('');const[due,setDue]=useState('');const[sp,setSp]=useState('');
+const today=new Date().toISOString().slice(0,10);
+const addHw=()=>{if(!txt.trim())return;setHw([...hw,{id:uid(),subject:sub,text:txt.trim(),due,done:false}]);setTxt('');setDue('')};
+const addSp=()=>{if(!sp.trim())return;setShop([...shop,{id:uid(),text:sp.trim(),done:false}]);setSp('')};
+const hws=[...hw].sort((a,b)=>(a.done-b.done)||((a.due||'9')>(b.due||'9')?1:-1));
+const Box=({on,f})=><button aria-label="Отметить" onClick={f} className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center" style={{border:'2px solid '+(on?'var(--ok)':'var(--line)'),background:on?'var(--ok)':'transparent',color:'#fff'}}>{on&&<I n="check" s={16}/>}</button>;
+return <div className="px-4 pt-1 pb-3">
+<div className="flex gap-1.5 mb-3"><button className={'chip flex-1 !px-1 text-sm '+(seg==='hw'?'on':'')} onClick={()=>setSeg('hw')}>Домашка · {hw.filter(h=>!h.done).length}</button>
+<button className={'chip flex-1 !px-1 text-sm '+(seg==='sp'?'on':'')} onClick={()=>setSeg('sp')}>Купить / Другое · {shop.filter(h=>!h.done).length}</button><button className={'chip flex-1 !px-1 text-sm '+(seg==='ex'?'on':'')} onClick={()=>setSeg('ex')}>Контрольные</button></div>
+{seg==='ex'?<Exams D={D}/>:seg==='hw'?<>
+<div className="card p-3 mb-3 space-y-2">
+<div className="flex gap-2"><select className="inp" value={sub} onChange={e=>setSub(e.target.value)}>{settings.subjects.map(s=><option key={s}>{s}</option>)}{!settings.subjects.length&&<option value="">Без предмета</option>}</select>
+<input type="date" className="inp" value={due} onChange={e=>setDue(e.target.value)} aria-label="Дедлайн"/></div>
+<div className="flex gap-2"><input className="inp" value={txt} onChange={e=>setTxt(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addHw()} placeholder="Что задали?"/>
+<button className="btn" aria-label="Добавить" onClick={addHw}><I n="plus" s={20}/></button></div></div>
+<div className="space-y-2">{hws.length===0&&<Empty t="Домашки нет. Впиши первое задание выше."/>}
+{hws.map(h=>{const late=!h.done&&h.due&&h.due<today;return <div key={h.id} className="card p-3 flex items-center gap-3" style={{opacity:h.done?.55:1}}>
+<Box on={h.done} f={()=>setHw(hw.map(x=>x.id===h.id?{...x,done:!x.done}:x))}/>
+<div className="flex-1 min-w-0"><div className="font-bold" style={{textDecoration:h.done?'line-through':'none'}}>{h.text}</div>
+<div className="text-sm mut"><b style={{color:col(h.subject,settings.colors)}}>{h.subject}</b>{h.due&&<span style={{color:late?'var(--bad)':'',fontWeight:late?800:400}}> · до {h.due.split('-').reverse().slice(0,2).join('.')}{late?' (просрочено)':''}</span>}</div></div>
+<button aria-label="Удалить" className="mut p-2" onClick={()=>setHw(hw.filter(x=>x.id!==h.id))}><I n="trash" s={18}/></button></div>})}
+{hw.some(h=>h.done)&&<button className="ghost w-full" onClick={()=>setHw(hw.filter(h=>!h.done))}>Убрать выполненные</button>}</div>
+</>:<>
+<div className="card p-3 mb-3 flex gap-2"><input className="inp" value={sp} onChange={e=>setSp(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addSp()} placeholder="Контурная карта, синяя ручка…"/>
+<button className="btn" aria-label="Добавить" onClick={addSp}><I n="plus" s={20}/></button></div>
+<div className="space-y-2">{shop.length===0&&<Empty t="Список пуст. Добавь, что нужно купить или сделать."/>}
+{[...shop].sort((a,b)=>a.done-b.done).map(h=><div key={h.id} className="card p-3 flex items-center gap-3" style={{opacity:h.done?.55:1}}>
+<Box on={h.done} f={()=>setShop(shop.map(x=>x.id===h.id?{...x,done:!x.done}:x))}/>
+<div className="flex-1 font-bold" style={{textDecoration:h.done?'line-through':'none'}}>{h.text}</div>
+<button aria-label="Удалить" className="mut p-2" onClick={()=>setShop(shop.filter(x=>x.id!==h.id))}><I n="trash" s={18}/></button></div>)}
+{shop.some(h=>h.done)&&<button className="ghost w-full" onClick={()=>setShop(shop.filter(h=>!h.done))}>Убрать вычеркнутое</button>}</div></>}
+</div>}
+
+function Extras({D}){
+const{extras,setExtras}=D;const[open,setOpen]=useState(false);
+const[f,setF]=useState({title:'',days:[],s:'16:00',e:'17:00',place:''});
+const tg=i=>setF({...f,days:f.days.includes(i)?f.days.filter(x=>x!==i):[...f.days,i]});
+const save=()=>{if(!f.title.trim()||!f.days.length||m(f.e)<=m(f.s))return;setExtras([...extras,{...f,title:f.title.trim(),id:uid()}]);setF({title:'',days:[],s:'16:00',e:'17:00',place:''});setOpen(false)};
+const bad=f.title.trim()&&(!f.days.length||m(f.e)<=m(f.s));
+return <div className="px-4 pt-1 pb-3">
+<div className="text-sm mut mb-3">Кружки, секции и репетиторы автоматически появляются в расписании в нужные дни.</div>
+<div className="space-y-2">{extras.length===0&&<Empty t="Пока ничего нет. Добавь кружок или репетитора."/>}
+{extras.map(x=><div key={x.id} className="card p-3 flex items-start gap-3">
+<div className="flex-1 min-w-0"><div className="font-bold">{x.title} <span className="tag ml-1">Доп.</span></div>
+<div className="text-sm mut">{x.days.slice().sort().map(d=>DAYS[d]).join(', ')} · {x.s}–{x.e}</div>
+{x.place&&<div className="text-sm mut flex items-center gap-1"><I n="pin" s={14}/>{x.place}</div>}</div>
+<button aria-label="Удалить" className="mut p-2" onClick={()=>setExtras(extras.filter(e=>e.id!==x.id))}><I n="trash" s={18}/></button></div>)}
+<button className="btn w-full flex items-center justify-center gap-2" onClick={()=>setOpen(true)}><I n="plus" s={18}/>Добавить занятие</button></div>
+{open&&<Sheet title="Новое занятие" onClose={()=>setOpen(false)}>
+<Lbl t="Название"><input className="inp" value={f.title} onChange={e=>setF({...f,title:e.target.value})} placeholder="Шахматы, репетитор по физике…"/></Lbl>
+<div className="mb-3"><div className="text-sm font-bold mut mb-1">Дни недели</div><div className="flex gap-1.5">{DAYS.map((d,i)=><button key={d} className={'chip flex-1 !px-0 '+(f.days.includes(i)?'on':'')} onClick={()=>tg(i)}>{d}</button>)}</div></div>
+<div className="flex gap-2"><Lbl t="Начало"><input type="time" className="inp" value={f.s} onChange={e=>setF({...f,s:e.target.value})}/></Lbl><Lbl t="Конец"><input type="time" className="inp" value={f.e} onChange={e=>setF({...f,e:e.target.value})}/></Lbl></div>
+<Lbl t="Место"><input className="inp" value={f.place} onChange={e=>setF({...f,place:e.target.value})} placeholder="Адрес или кабинет"/></Lbl>
+{bad&&<div className="text-sm mb-2" style={{color:'var(--bad)'}}>Выбери хотя бы один день, а конец должен быть позже начала.</div>}
+<button className="btn w-full" onClick={save}>Сохранить занятие</button></Sheet>}
+</div>}
+
+function Olymp({D}){
+const{olymp,setOlymp,settings}=D;const[open,setOpen]=useState(false);
+const blank={title:'',subject:settings.subjects[0]||'',stage:STAGES[0],date:'',link:'',status:STATUS[0]};
+const[f,setF]=useState(blank);
+const save=()=>{if(!f.title.trim())return;setOlymp([...olymp,{...f,title:f.title.trim(),id:uid()}]);setF(blank);setOpen(false)};
+const col=s=>s==='Прошёл'?'var(--ok)':s==='Не прошёл'?'var(--bad)':'var(--ac)';
+const sorted=[...olymp].sort((a,b)=>(a.date||'9')>(b.date||'9')?1:-1);
+return <div className="px-4 pt-1 pb-3 space-y-2">
+{sorted.length===0&&<Empty t="Олимпиад пока нет. Добавь первую, чтобы следить за этапами и результатами."/>}
+{sorted.map(o=><div key={o.id} className="card p-3">
+<div className="flex items-start gap-2"><div className="flex-1 min-w-0"><div className="font-extrabold">{o.title}</div>
+<div className="text-sm mut">{o.subject} · {o.stage} этап{o.date&&' · '+o.date.split('-').reverse().join('.')}</div></div>
+<button aria-label="Удалить" className="mut p-1" onClick={()=>setOlymp(olymp.filter(x=>x.id!==o.id))}><I n="trash" s={18}/></button></div>
+<div className="flex items-center gap-2 mt-2">
+<select className="inp !py-1.5 !text-sm flex-1" value={o.status} style={{color:col(o.status),fontWeight:700}} onChange={e=>setOlymp(olymp.map(x=>x.id===o.id?{...x,status:e.target.value}:x))}>{STATUS.map(s=><option key={s}>{s}</option>)}</select>
+{o.link&&<a className="ghost flex items-center gap-1 no-underline" href={/^https?:/.test(o.link)?o.link:'https://'+o.link} target="_blank" rel="noopener noreferrer"><I n="link" s={16}/>Кабинет</a>}</div></div>)}
+<button className="btn w-full flex items-center justify-center gap-2" onClick={()=>setOpen(true)}><I n="plus" s={18}/>Добавить олимпиаду</button>
+{open&&<Sheet title="Новая олимпиада" onClose={()=>setOpen(false)}>
+<Lbl t="Название"><input className="inp" value={f.title} onChange={e=>setF({...f,title:e.target.value})} placeholder="Всероссийская олимпиада школьников"/></Lbl>
+<Lbl t="Предмет"><select className="inp" value={f.subject} onChange={e=>setF({...f,subject:e.target.value})}>{settings.subjects.map(s=><option key={s}>{s}</option>)}{!settings.subjects.length&&<option value="">—</option>}</select></Lbl>
+<div className="flex gap-2"><Lbl t="Этап"><select className="inp" value={f.stage} onChange={e=>setF({...f,stage:e.target.value})}>{STAGES.map(s=><option key={s}>{s}</option>)}</select></Lbl>
+<Lbl t="Дата"><input type="date" className="inp" value={f.date} onChange={e=>setF({...f,date:e.target.value})}/></Lbl></div>
+<Lbl t="Ссылка на личный кабинет"><input className="inp" value={f.link} onChange={e=>setF({...f,link:e.target.value})} placeholder="https://"/></Lbl>
+<Lbl t="Статус"><select className="inp" value={f.status} onChange={e=>setF({...f,status:e.target.value})}>{STATUS.map(s=><option key={s}>{s}</option>)}</select></Lbl>
+<button className="btn w-full" onClick={save}>Сохранить олимпиаду</button></Sheet>}
+</div>}
+
+function Settings({D,onClose}){
+const{settings,setSettings}=D;const[ns,setNs]=useState('');
+const setBell=(g,i,k,v)=>setSettings({...settings,[g]:settings[g].map((b,j)=>j===i?(k?[b[0],v]:[v,b[1]]):b)});
+const addB=g=>{const l=settings[g][settings[g].length-1]||['15:00','15:45'];const s=Math.min(m(l[1])+10,1380);const t=x=>String(Math.floor(x/60)).padStart(2,'0')+':'+String(x%60).padStart(2,'0');setSettings({...settings,[g]:[...settings[g],[t(s),t(Math.min(s+45,1439))]]})};
+const cyc=s=>{const cur=col(s,settings.colors);const nx=PAL[(PAL.indexOf(cur)+1)%PAL.length];setSettings({...settings,colors:{...(settings.colors||{}),[s]:nx}})};
+const addS=()=>{const v=ns.trim();if(!v||settings.subjects.includes(v))return;setSettings({...settings,subjects:[...settings.subjects,v]});setNs('')};
+return <Sheet title="Настройки" onClose={onClose}>
+{[['bellsMon','Звонки: понедельник'],['bells','Звонки: вторник–суббота']].map(([g,gt])=><div key={g}><div className="font-extrabold mb-2">{gt}</div>
+<div className="space-y-2 mb-2">{settings[g].map((b,i)=><div key={i} className="flex items-center gap-2">
+<div className="w-16 font-bold text-sm">{i+1} урок</div>
+<input type="time" className="inp" value={b[0]} onChange={e=>setBell(g,i,0,e.target.value)}/><span>–</span>
+<input type="time" className="inp" value={b[1]} onChange={e=>setBell(g,i,1,e.target.value)}/>
+<button aria-label="Удалить звонок" className="mut" onClick={()=>setSettings({...settings,[g]:settings[g].filter((_,j)=>j!==i)})}><I n="x" s={18}/></button></div>)}</div>
+<button className="ghost mb-5" onClick={()=>addB(g)}>+ Урок</button></div>)}
+<div className="font-extrabold mb-2">Школьные предметы</div>
+<div className="flex flex-wrap gap-2 mb-2">{settings.subjects.map(s=><span key={s} className="chip flex items-center gap-1"><button aria-label={'Цвет: '+s} onClick={()=>cyc(s)} className="w-4 h-4 rounded-full" style={{background:col(s,settings.colors)}}/>{s}<button aria-label={'Удалить '+s} onClick={()=>setSettings({...settings,subjects:settings.subjects.filter(x=>x!==s)})}><I n="x" s={14}/></button></span>)}</div>
+<div className="flex gap-2"><input className="inp" value={ns} onChange={e=>setNs(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addS()} placeholder="Новый предмет"/><button className="btn" onClick={addS} aria-label="Добавить предмет"><I n="plus" s={20}/></button></div>
+</Sheet>}
+
+function App(){
+const[tab,setTab]=useState('sch');const[st,setSt]=useState(false);
+const[settings,setSettings]=useLS('pl_settings2',DEF);
+const[lessons,setLessons]=useLS('pl_lessons2',DL);
+const[extras,setExtras]=useLS('pl_extras',[]);
+const[hw,setHw]=useLS('pl_hw',[]);
+const[shop,setShop]=useLS('pl_shop',[]);
+const[olymp,setOlymp]=useLS('pl_olymp',[]);
+const[exams,setExams]=useLS('pl_exams',[]);
+const[pack,setPack]=useLS('pl_pack',{});
+const[pm,setPm]=useLS('pl_pomo',{mode:'work',run:false,end:0,rem:1500,w:25,b:5,subject:'',done:{}});
+const[events,setEvents]=useLS('pl_events',[]);const[notes,setNotes]=useLS('pl_notes',{});
+const[,setNow]=useState(0);
+useEffect(()=>{const i=setInterval(()=>{setNow(x=>x+1);setPm(p=>{if(!p.run||Date.now()<p.end)return p;const wk=p.mode==='work';const k=dk();setTimeout(beep,0);return{...p,run:false,mode:wk?'break':'work',rem:(wk?p.b:p.w)*60,done:wk?{[k]:(p.done[k]||0)+1}:p.done}})},500);return()=>clearInterval(i)},[]);
+const D={settings,setSettings,lessons,setLessons,extras,setExtras,hw,setHw,shop,setShop,olymp,setOlymp,exams,setExams,pack,setPack,events,setEvents,notes,setNotes};
+const T=[['sch','cal','Расписание'],['pl','task','Планер'],['ex','users','Доп.'],['ol','trophy','Олимпиады'],['pm','clock','Таймер']];
+const titles={sch:'Расписание',pl:'Планер',ex:'Доп. занятия',ol:'Олимпиады',pm:'Помодоро'};
+return <div className="h-full flex flex-col max-w-xl mx-auto">
+<header className="flex items-center justify-between px-4 py-3"><h1 className="text-2xl font-extrabold m-0">{titles[tab]}</h1>
+<button aria-label="Настройки" className="ghost" onClick={()=>setSt(true)}><I n="cog" s={20}/></button></header>
+<main className="flex-1 overflow-y-auto">
+{tab==='sch'&&<Schedule D={D}/>}{tab==='pl'&&<Planner D={D}/>}{tab==='ex'&&<Extras D={D}/>}{tab==='ol'&&<Olymp D={D}/>}{tab==='pm'&&<Pomo pm={pm} setPm={setPm} subjects={settings.subjects}/>}</main>
+<nav className="grid grid-cols-5" style={{background:'var(--card)',borderTop:'1px solid var(--line)'}}>
+{T.map(([k,ic,l])=><button key={k} onClick={()=>setTab(k)} className="flex flex-col items-center gap-0.5 py-2" style={{color:tab===k?'var(--ac)':'var(--mut)',fontWeight:tab===k?800:600,fontSize:12}}><I n={ic} s={22}/>{k==='pm'&&pm.run&&tab!=='pm'?fmt(Math.max(0,Math.ceil((pm.end-Date.now())/1000))):l}</button>)}</nav>
+{st&&<Settings D={D} onClose={()=>setSt(false)}/>}
+</div>}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+try{if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}
+</script>
+</body>
+</html>
